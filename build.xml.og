@@ -1,0 +1,704 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+Ant build file for OurGrid
+Please, refer to the end of this document to see the task's documentation. 
+-->
+                  
+<project basedir="." default="build" name="OurGrid">
+<property file="build.properties" />
+<taskdef resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties">
+	<classpath>
+		<pathelement location="${aspectj.aspectjtools.jar}" />
+	</classpath>
+</taskdef>
+<taskdef resource="tasks.properties">
+	<classpath>
+		<pathelement location="${cobertura.cobertura.jar}" />
+	</classpath>
+</taskdef>
+
+<!-- INIT-->
+<target name="init">
+	<mkdir dir="${ourgrid.dist.dir}" />
+	<mkdir dir="${ourgrid.output.dir}" />
+	<mkdir dir="${ourgrid.test.basedir}" />
+	<mkdir dir="${ourgrid.test.ui}" />
+</target>
+<!-- END INIT -->
+
+<!-- COMPILE -->
+<target name="compile" depends="init">
+
+	<javac classpath="${java.classpath}" srcdir="${ourgrid.src.dir}" destdir="${ourgrid.output.dir}" debug="on" optimize="on" >
+		<include name="**" />
+	</javac>
+	
+	<javac classpath="${java.classpath}" srcdir="${ourgrid.test.basedir}" destdir="${ourgrid.test.basedir}" debug="on" optimize="on" >
+		<include name="**" />
+	</javac>
+	
+	<javac classpath="${java.classpath}" srcdir="${ourgrid.test.ui}" destdir="${ourgrid.test.ui}" debug="on" optimize="on" >
+		<include name="**" />
+	</javac>
+
+</target>
+<!-- END COMPILE -->
+
+<!-- CLEAN -->
+<target name="clean"> 
+
+	<delete dir="${ourgrid.dist.dir}"/>
+	<delete dir="${ourgrid.output.dir}/org"/>
+	<delete dir="${ourgrid.output.dir}/EDU"/>
+	<delete dir="${ourgrid.output.dir}/tracing"/>
+	<delete file="${ourgrid.jar.ourgrid}"/>
+	<delete file="${ourgrid.jar.useragent}"/>
+	<delete file="${ourgrid.status.war}"/>
+
+	<delete>
+		<fileset dir="${ourgrid.root}" includes="**/*.tmp" />
+	</delete>
+	
+</target>
+<!-- END CLEAN -->
+
+<!-- BUILD -->
+<target name="build">
+	<antcall target="clean" />
+	<antcall target="compile" />
+	<antcall target="makejar" />
+</target>
+<!-- END BUILD -->
+
+<!-- DOJAVADOC -->
+<target name="dojavadoc">
+
+	<javadoc
+		author="true" 
+		destdir="${ourgrid.docs.dir}"
+		use="true" 
+		version="true" 
+		windowtitle="ourgrid"
+		classpath="lib/junit.jar:lib/easymockclassextension.jar:lib/aspectjrt.jar:lib/cglib.jar:lib/log4j.jar:lib/easymock.jar:lib/servlet.jar">
+
+		<packageset dir="src" defaultexcludes="yes">
+		      <include name="org/ourgrid/**"/>
+		      <exclude name="ourgrid/**"/>
+		</packageset>
+		
+	</javadoc>
+
+</target>
+<!-- END DOJAVADOC -->
+
+<!-- MAKEJAR -->
+<target name="makejar">
+
+	<jar destfile="${ourgrid.jar.ourgrid}">
+		<fileset dir="${ourgrid.output.dir}">
+			<include name="**/*.class" />
+		</fileset>
+
+		<fileset dir=".">
+			<include name="resources/specs/*.gals" />
+			<include name="resources/mg.messages" />
+		</fileset>
+	</jar>
+	
+	<jar destfile="${ourgrid.jar.useragent}" >
+		<fileset dir="${ourgrid.output.dir}">
+			<include name="org/ourgrid/common/**/*.class" />
+			<include name="org/ourgrid/gridmachine/**/*.class" />
+			<include name="org/ourgrid/test/**/*.class"/>
+			<include name="org/ourgrid/threadServicesAspects/*.class"/>
+			<include name="org/ourgrid/testaspects/*.class"/>
+		</fileset>
+
+		<fileset dir=".">
+			<include name="resources/mg.messages" />
+		</fileset>		
+	</jar>
+
+</target>
+<!-- END MAKEJAR -->
+
+<!-- MAKE DISTRIBUTION -->
+<target name="dist" depends="build">
+
+	<!-- MyGrid package -->
+	<tar destfile="${ourgrid.dist.mygrid}${ourgrid.dist.version}${ourgrid.dist.suffix}"
+		 compression="gzip">
+		  <tarfileset dir="${ourgrid.lib.dir}" prefix="mygrid/lib">
+		    <include name="log4j.jar"/>
+		    <include name="ourgrid.jar"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.bin.dir}" prefix="mygrid/bin" mode="744">
+		    <include name="mygrid"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.examples.dir}" prefix="mygrid/examples">
+		    <include name="**/*"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.basedir}" prefix="mygrid">
+		    <include name="RELEASE-NOTES"/>
+		  	<include name="LICENSE"/>
+	  		<include name="mygrid.log.properties"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.resource.dir}" prefix="mygrid/resources">
+		    <include name="ABOUT"/>
+		    <include name="images/**"/>
+		  </tarfileset>
+	</tar>
+
+	<!-- UserAgent package -->
+	<tar destfile="${ourgrid.dist.useragent}${ourgrid.dist.version}${ourgrid.dist.suffix}"
+		 compression="gzip">
+		  <tarfileset dir="${ourgrid.lib.dir}" prefix="useragent">
+		    <include name="log4j.jar"/>
+		    <include name="useragent.jar"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.bin.dir}" prefix="useragent" mode="744">
+		    <include name="useragent"/>
+		    <include name="useragent.bat"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.examples.dir}/properties" prefix="useragent">
+		    <include name="ua.properties"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.basedir}" prefix="useragent">
+		    <include name="RELEASE-NOTES"/>
+		  	<include name="LICENSE"/>
+	  		<include name="ua.log.properties"/>
+		  </tarfileset>
+	</tar>
+
+	<!-- Peer package -->
+	<tar destfile="${ourgrid.dist.peer}${ourgrid.dist.version}${ourgrid.dist.suffix}"
+		 compression="gzip">
+		  <tarfileset dir="${ourgrid.lib.dir}" prefix="peer/lib">
+		    <include name="log4j.jar"/>
+		    <include name="useragent.jar"/>
+		    <include name="ourgrid.jar"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.bin.dir}" prefix="peer/bin" mode="744">
+		    <include name="useragent"/>
+		    <include name="uaadmin"/>
+		    <include name="peer"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.examples.dir}/properties" prefix="peer">
+		    <include name="ua.properties"/>
+		    <include name="peer.properties"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.examples.dir}/resources" prefix="peer">
+		    <include name="example.sdf"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.basedir}" prefix="peer">
+		    <include name="RELEASE-NOTES"/>
+		  	<include name="LICENSE"/>
+	  		<include name="peer.log.properties"/>
+	  		<include name="ua.log.properties"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.resource.dir}" prefix="peer/resources">
+		    <include name="ABOUT"/>
+		    <include name="images/**"/>
+		    <include name="xml/**"/>
+		  </tarfileset>
+	</tar>
+		
+	<!-- Corepeer package -->
+	<tar destfile="${ourgrid.dist.corepeer}${ourgrid.dist.version}${ourgrid.dist.suffix}"
+		 compression="gzip">
+		  <tarfileset dir="${ourgrid.lib.dir}" prefix="corepeer/lib">
+		    <include name="log4j.jar"/>
+		    <include name="ourgrid.jar"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.bin.dir}" prefix="corepeer/bin" mode="744">
+		    <include name="corepeer"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.examples.dir}/properties" prefix="corepeer">
+		    <include name="corepeer.properties"/>
+		  </tarfileset>
+		  <tarfileset dir="${ourgrid.basedir}" prefix="corepeer">
+		    <include name="RELEASE-NOTES"/>
+		  	<include name="LICENSE"/>
+	  		<include name="corepeer.log.properties"/>
+		  </tarfileset>
+	</tar>
+	
+</target>
+<!-- END MAKE DISTRIBUTION -->
+	
+<!-- ASPECTS -->
+<target name="aspects">
+	
+	<antcall target="clean" />
+	
+	<move file="${aspectj.src.dir}/org/ourgrid/threadServicesAspects/ThreadSleeperAspect.aj" todir="${ourgrid.root}" />
+		
+	<iajc source="1.5" fork="true" maxmem="256M" classpath="${aspectjrt.jar}:${java.classpath}:." destdir="${ourgrid.output.dir}">
+		<sourceroots>
+			<pathelement location="${ourgrid.src.dir}" />
+			<pathelement location="${aspectj.src.dir}" />
+		</sourceroots>
+	</iajc>
+	
+	<move file="${ourgrid.root}/ThreadSleeperAspect.aj" todir="${ourgrid.root}/srcAspects/org/ourgrid/threadServicesAspects" />
+		
+	<!-- COMPILE RESOURCES -->
+	<javac classpath="${java.classpath}" srcdir="${ourgrid.test.basedir}" destdir="${ourgrid.test.basedir}" debug="on" optimize="on" >
+		<include name="**" />
+	</javac>
+
+	<javac classpath="${java.classpath}" srcdir="${ourgrid.test.ui}" destdir="${ourgrid.test.ui}" debug="on" optimize="on" >
+		<include name="**" />
+	</javac>
+	<!-- END COMPILE RESOURCES -->
+
+	<antcall target="makejar" />
+	
+</target>
+<!-- END ASPECTS -->
+	
+<!-- COBERTURA-INIT -->
+<target name="cobertura-init" depends="clean">
+	<mkdir dir="${cobertura.output.dir}" />
+	<mkdir dir="${cobertura.coverage.dir}" />
+</target>
+<!-- END COBERTURA-INIT -->
+
+<!-- COBERTURA-INST -->
+<target name="cobertura-inst" depends="cobertura-init, build">
+ 	<antcall target="aspects" />
+       <cobertura-instrument todir="${cobertura.output.dir}">
+		<fileset dir="${ourgrid.output.dir}">
+			<include name="**/*.class"/>
+		</fileset>
+	</cobertura-instrument>
+	<antcall target="makejar" />
+</target>
+<!-- END COBERTURA-INST -->
+
+
+<!-- COBERTURA PRE_COMMIT -->
+<target name="cobertura" depends="cobertura-inst">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="PreCommitTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.PreCommitTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+
+		<classpath>
+			<pathelement path="${cobertura.cobertura.jar}:${cobertura.output.dir}:${java.classpath}:${ourgrid.output.dir}" />
+			<fileset dir="${cobertura.lib.dir}" casesensitive="yes">
+				<include name="**/*.jar"/>
+			</fileset>
+		</classpath>
+	</java>
+
+</target>
+<!-- END COBERTURA PRE_COMMIT -->
+
+<!-- COVERAGE REPORT -->
+<target name="coverage" depends="cobertura">
+    <cobertura-report srcdir="${ourgrid.src.dir}" destdir="${cobertura.coverage.dir}"/>
+</target>
+<!-- END COVERAGE REPORT -->
+	
+<!-- COMMON -->
+<target name="common"> 
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="FastTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.CommonTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.basedir}" />
+
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+</target>
+<!-- END COMMON -->
+
+<!-- SCHEDULER -->
+<target name="scheduler">
+
+<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="FastTestsRunner" failonerror="false">
+	<arg value="org.ourgrid.test.SchedulerFastTest" />
+	<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+	<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+	<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+	<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+	<jvmarg value="-DMGROOT=${ourgrid.root}" />
+	
+	<classpath>
+		<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+	</classpath>
+</java>
+
+</target>
+<!-- END SCHEDULER -->
+
+<!-- SCHEDULER PRE-COMMIT -->
+<target name="schedulercommit">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="PreCommitTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.SchedulerPreCommitTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END SCHEDULER PRE-COMMIT -->
+
+<!-- REPEXECUTOR -->
+<target name="repexecutor">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="FastTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.ReplicaExecutorFastTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+	
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+	
+</target>
+<!-- END REPEXECUTOR -->
+
+<!-- GUI -->
+<target name="gui"> 
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="FastTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.GUITest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+		
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+	
+</target>
+<!-- END GUI -->
+
+<!-- PEER -->
+<target name="peer">
+
+<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="FastTestsRunner" failonerror="false">
+	<arg value="org.ourgrid.test.PeerFastTest" />
+	<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+	<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+	<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+	<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+	<jvmarg value="-DMGROOT=${ourgrid.basedir}" />
+	
+	<classpath>
+		<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+	</classpath>
+</java>
+
+</target>
+<!-- END PEER -->
+
+<!-- PEER PRE-COMMIT -->
+<target name="peercommit" depends="aspects">
+	
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="PreCommitTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.PeerPreCommitTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.basedir}" />
+		
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END PEER PRE-COMMIT -->
+	
+<!-- COREPEER -->
+<target name="corepeer">
+
+<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="FastTestsRunner" failonerror="false">
+	<arg value="org.ourgrid.test.CorepeerPreCommitTest" />
+	<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+	<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+	<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+	<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+	<jvmarg value="-DMGROOT=${ourgrid.basedir}" />
+	
+	<classpath>
+		<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+	</classpath>
+</java>
+
+</target>
+<!-- END COREPEER -->
+
+<!-- SECURITY -->
+<target name="security">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="PreCommitTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.SecurityTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END SECURITY -->
+
+<!-- FUNCTIONAL STRESS  -->
+<target name="functional">
+	<move file="${ourgrid.basedir}/distributedWaitAspects/FunctionalControlThreadPool.aj" todir="${aspectj.src.dir}/org/ourgrid/threadServicesAspects" />
+	<move file="${ourgrid.basedir}/distributedWaitAspects/FunctionalThreadsMonitor.aj" todir="${aspectj.src.dir}/org/ourgrid/threadServicesAspects" />
+	<move file="${ourgrid.basedir}/distributedWaitAspects/RemoteTestServicesBinder.aj" todir="${aspectj.src.dir}/org/ourgrid/threadServicesAspects" />
+	<antcall target="aspects" />
+	<move file="${aspectj.src.dir}/org/ourgrid/threadServicesAspects/FunctionalControlThreadPool.aj" todir="${ourgrid.basedir}/distributedWaitAspects"/>
+	<move file="${aspectj.src.dir}/org/ourgrid/threadServicesAspects/FunctionalThreadsMonitor.aj" todir="${ourgrid.basedir}/distributedWaitAspects"/>
+	<move file="${aspectj.src.dir}/org/ourgrid/threadServicesAspects/RemoteTestServicesBinder.aj" todir="${ourgrid.basedir}/distributedWaitAspects"/>
+	
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="StressTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.FunctionalStressTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>	
+	</java>
+
+</target>
+<!-- END FUNCTIONAL STRESS  -->
+
+<!-- REPEXECUTOR PRE-COMMIT -->
+<target name="repexecutorcommit">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="PreCommitTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.ReplicaExecutorPreCommitTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+		
+		<classpath>
+		<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END REPEXECUTOR PRE-COMMIT -->
+
+<!-- GUM PRE-COMMIT -->
+<target name="gum">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="PreCommitTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.GumPreCommitTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.basedir}" />
+	
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END GUM PRE-COMMIT -->
+	
+<!-- UNIQUE TEST - used for testing just one class per time -->
+<target name="unique">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.UniqueTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.basedir}" />
+	
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END UNIQUE -->
+
+<!-- FAST TESTS -->
+<target name="fast"> 
+	
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="FastTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.FastTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END FAST TESTS -->
+
+<!-- PRE_COMMIT -->
+<target name="commit" depends="aspects">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="PreCommitTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.PreCommitTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+
+</target>
+<!-- END PRE_COMMIT -->
+
+<!-- STRESS -->
+<target name="stress">
+
+	<java fork="yes" classname="org.ourgrid.test.SelectiveTestsRunner" taskname="StressTestsRunner" failonerror="false">
+		<arg value="org.ourgrid.test.StressTest" />
+		<jvmarg value="-Dourgrid.test.type=${ourgrid.test.type}" />
+		<jvmarg value="-Dourgrid.output.dir=${ourgrid.output.dir}" />
+		<jvmarg value="-Dourgrid.temp.dir=${ourgrid.temp.dir}" />
+		<jvmarg value="-Dourgrid.bin.dir=${ourgrid.bin.dir}" />
+		<jvmarg value="-DMGROOT=${ourgrid.root}" />
+
+		<classpath>
+			<pathelement path="${ourgrid.output.dir}:${java.classpath}" />
+		</classpath>
+	</java>
+	
+</target>
+<!-- END_STRESS -->
+
+<!-- WITH.CLOVER -->
+<target name="with.clover">
+	
+	<taskdef resource="clovertasks" />
+
+	<clover-setup initString=".clover/coverage.db">
+		<files>
+			<exclude name="**/Mock*.java,**/Fake*.java" />
+		</files>
+	</clover-setup>
+	
+</target>
+<!-- END_WITH.CLOVER -->
+
+<!-- CLOVER.SWING -->
+<target name="clover.swing">
+
+	<clover-setup initString=".clover/coverage.db">
+		<files>
+			<exclude name="**/Mock*.java,**/Fake*.java" />
+		</files>
+	</clover-setup>
+	
+</target>
+<!-- END_CLOVER.SWING -->
+
+<!-- WEBSTATUS -->
+<target name="webstatus" depends="build">
+
+	<path id="compile.classpath">
+		<fileset dir="${ourgrid.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		
+		<pathelement location="${ourgrid.output.dir}" />
+	</path>
+
+	<war warfile="${ourgrid.status.dist}/${ourgrid.status.war}" webxml="${ourgrid.status.www}/web.xml">
+		<!-- put on .war the classes folders -->
+		<classes dir="${ourgrid.output.dir}"/>
+		<classes file="${ourgrid.basedir}/webstatus.log.properties"/>
+		<classes file="${ourgrid.bin.dir}/startWebStatus"/>
+		<!-- put on .war the libraries -->
+		<lib dir="${ourgrid.lib.dir}" />
+		<!-- web files -->
+		<fileset dir="${ourgrid.status.jsp}" />
+	</war>
+
+</target>
+<!-- END_WEBSTATUS -->
+
+<!-- HELP -->
+<target name="help" description="prints target descriptions">
+
+	<echo message="BUILD related tasks:" />
+	<echo message="     init : creates the required directories" />
+	<echo message="     compile : compiles all source code" />
+	<echo message="     clean : clean up a previous build" />
+	<echo message="     build  (default) : complete system build" />
+	<echo message="     dojavadoc : creates javadoc from the ourgrid.source code" />
+	<echo message="     makejar : create ourgrid.jar" />
+	<echo message="     help : prints this help." />
+	<echo message="     aspects : compiles including aspects without sleep commands" />
+	<echo message="     webstatus : Compile and create a .war package for use on Tomcat Web Server" />
+
+	<echo message="TEST CATEGORIES related tasks:" />
+	<echo message="     fast : runs all fast tests" />
+	<echo message="     commit : runs all pre-commit tests" />
+	<echo message="     stress : runs all stress tests" />
+
+	<echo message="FAST TEST related tasks:" />
+	<echo message="     gui: runs all fast tests for the GUI module" />
+	<echo message="     security: runs all tests related to security" />
+	<echo message="     common: runs all tests related to common.util and common.spec" />
+	<echo message="     	: runs all tests related to grid machine" />
+	<echo message="     scheduler : runs all fast tests for the Scheduler module" />
+	<echo message="     repexecutor : runs all fast tests for the ReplicaExecutor module" />
+	<echo message="     peer : runs all fast tests for the OurGrid module" />
+	<echo message="     corepeer : runs all fast tests for the Corepeer module" />
+
+	<echo message="PRE-COMMIT TEST related tasks:" />
+	<echo message="     schedulercommit : runs all pre-commit tests involving the Scheduler module" />
+	<echo message="     repexecutorcommit : runs all pre-commit tests involving the ReplicaExecutor module" />
+	<echo message="     peercommit : runs all pre-commit tests involving the OurGrid module" />
+
+</target>
+<!-- END_HELP -->
+
+</project>

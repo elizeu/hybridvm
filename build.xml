@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+Ant build file for DVN-Client
+Please, refer to the end of this document to see the task's documentation. 
+-->
+                  
+<project basedir="." default="build" name="OurGrid">
+<property file="build.properties" />
+
+<!-- INIT-->    
+<target name="init">
+	<mkdir dir="${hybrid.vm.market.dist.dir}" />
+	<mkdir dir="${hybrid.vm.market.output.dir}" />
+</target>
+<!-- END INIT -->
+
+<!-- COMPILE -->
+<target name="compile" depends="init">
+
+	<javac classpath="${java.classpath}" srcdir="${hybrid.vm.market.src.dir}" destdir="${hybrid.vm.market.output.dir}" debug="on" optimize="on" >
+		<include name="**" />
+	</javac>
+	
+</target>
+<!-- END COMPILE -->
+
+<!-- CLEAN -->
+<target name="clean"> 
+
+	<delete dir="${hybrid.vm.market.dist.dir}"/>
+	<delete dir="${hybrid.vm.market.output.dir}"/>
+	<delete file="${hybrid.vm.market.name}${hybrid.vm.market.dist.version}${hybrid.vm.market.dist.suffix}"/>
+	
+</target>
+<!-- END CLEAN -->
+
+<!-- BUILD -->
+<target name="build">
+	<antcall target="clean" />
+	<antcall target="compile" />
+	<antcall target="makejar" />
+</target>
+<!-- END BUILD -->
+
+
+<!-- MAKEJAR -->
+<target name="makejar">
+
+	<jar destfile="${hybrid.vm.market.lib.dir}${hybrid.vm.market.jar}">
+		<fileset dir="${hybrid.vm.market.output.dir}">
+			<include name="**/*.class" />
+		</fileset>
+
+	</jar>
+	
+</target>
+<!-- END MAKEJAR -->
+
+<!-- MAKE DISTRIBUTION -->
+<target name="dist" depends="build">
+
+	<!-- dvn client package -->
+	<tar destfile="${hybrid.vm.market.name}${hybrid.vm.market.dist.version}${hybrid.vm.market.dist.suffix}"
+		 compression="gzip">
+		  <tarfileset dir="${hybrid.vm.market.lib.dir}" prefix="lib">
+			<include name="${hybrid.vm.market.jar}"/>
+			<include name="${junit}"/>
+			<include name="${log4j}"/>
+		  </tarfileset>
+		  <tarfileset dir="${hybrid.vm.market.bin.dir}" prefix="bin" mode="744">
+		    <include name="dvn-upload"/>
+		    <include name="dvn-download"/>
+		  </tarfileset>
+	</tar>
+		
+
+</target>
+<!-- END MAKE DISTRIBUTION -->
+	
+</project>

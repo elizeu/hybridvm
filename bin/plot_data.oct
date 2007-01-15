@@ -1,0 +1,37 @@
+#!/usr/bin/octave
+
+## Load everyhting
+load('/home/elizeu/workspace/hybrid-vm/share.res');
+load('/home/elizeu/workspace/hybrid-vm/leasingshare.res');
+load('/home/elizeu/workspace/hybrid-vm/auctionshare.res');
+
+load('/home/elizeu/workspace/hybrid-vm/price.res');
+load('/home/elizeu/workspace/hybrid-vm/leasingprice.res');
+load('/home/elizeu/workspace/hybrid-vm/auctionprice.res');
+
+load('/home/elizeu/workspace/hybrid-vm/requests.res');
+
+## Plot share
+plot(share,"+1;Average Share;");
+hold on;
+grid;
+plot(leasingshare,"x2;Leasing Average Share;");
+plot(auctionshare,"o3;Auction Average Share;");
+
+gset output 'share.png';
+gset term png;
+
+replot;
+hold off;
+
+## Plot price
+plot(price,"+1;Average Price;");
+hold on;
+grid;
+plot(leasingprice,"x2;Leasing Average Price;");
+plot(auctionprice,"o3;Auction Average Price;");
+
+gset output 'price.png';
+gset term png;
+
+replot;
